@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body{
+            background: url("/static/home.jpg");
+            background-attachment: fixed;
+            background-size:cover;
+        }
+    </style>
+</head>
+<body >
+    <div style="text-align: center">
+        <h1 style="color: black;margin-left: 410px">
+            欢迎使用 接口测试平台
+        </h1>
+
+        <div style="border:1px solid black;border-radius: 10px 0px 0px 10px;text-align:
+        center;background-color: #e3ffe3;opacity: 0.8;color: white;margin-left: 300px">
+            <h3 style="color: #3e2935">欢迎使用传送门:</h3>
+            <strong>
+
+                {% for i in hrefs %}
+                    <a href="{{i.href}}">{{i.name}}</a><br>
+                {%endfor %}
+
+            </strong>
+            <br>
+        </div>
+
+        <br>
+        <div style="border:1px solid black;border-radius: 10px 0px 0px 10px;text-align:
+        center;background-color: #e3ffe3;opacity: 0.8;color: white;margin-left: 300px">
+            <h3 style="color: #3e2935">您的项目:</h3>
+            <span style="color: black">
+
+            </span>
+            <br>
+        </div>
+
+        <br>
+        <div style="border:1px solid black;border-radius: 10px 0px 0px 10px;text-align:
+        center;background-color: #e3ffe3;opacity: 0.8;color: white;margin-left: 300px">
+            <h3 style="color: #3e2935">最新消息:</h3>
+            <span style="color:black">
+                帮助页面上线<br>
+                后台开启，仅限有管理权限的同学使用<br>
+                项目列表上线，您现在可以进入所有项目内<br>
+            </span>
+            <br>
+        </div>
+
+        <br>
+        <div style="border:1px solid black;border-radius: 10px 0px 0px 10px;text-align:
+        center;background-color: #e3ffe3;opacity: 0.8;color: white;margin-left: 300px">
+            <br>
+            <textarea id="tucao_input" cols="50" rows="5" placeholder="匿名吐槽专用，点击 发送按钮即可反馈！"
+                  style="border-radius: 5px;padding-left: 10px;box-shadow: 4px 4px 9px grey"></textarea>
+            <br>
+            <button style="border-radius: 0px 0px 50px 50px;width:100px" onclick="pei()">发送</button>
+            <br><br>
+        </div>
+
+    <script>
+        function pei() {
+            $.get("/pei/",{
+                "tucao_text":document.getElementById('tucao_input').value,
+            },function (ret) {
+                alert('已成功吐槽！')
+            })
+        }
+    </script>
+
+</body>
+</html>
