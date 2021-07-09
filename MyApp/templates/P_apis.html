@@ -40,11 +40,12 @@
                     <button class="btn btn-success" onclick="ts_show('{{ i.id }}','{{ i.name }}')">调试</button>
                     <button class="btn btn-default" onclick="open_bz('{{ i.id }}')">备注</button>
                     <button class="btn btn-default" onclick="copy_api('{{ i.id }}')">复制</button>
-                    <button class="btn btn-default" onclick="error_test('{{ i.id }}','{{ i.api_body }}')">异常值测试</button>
+                    <button class="btn btn-default" onclick="error_test('{{ i.id }}')">异常值测试</button>
                     <button class="btn btn-danger" onclick="document.location.href='/project_api_del/{{ i.id }}/'" >删除</button>
                  </div>
              </td>
 
+                <input type="text" id="api_error_{{ i.id }}" value="{{ i.api_body }}" style="display: none">
              </tr>
         {% endfor %}
     </tbody>
@@ -562,16 +563,20 @@ left:10%;background-color: #3c4043;box-shadow: 4px 4px 8px grey;color: white;pad
     value="'a',123,'',' ','./?*&^','中文'">
     <br><br>
 
-    <span>替换: username -> 123</span>
-    <textarea style="width:99%;height: 50px;border-radius: 5px;color: black"></textarea>
-    <span>替换: username -> "aaa"</span>
-    <textarea style="width:99%;height: 50px;border-radius: 5px"></textarea>
-    <span>替换: username -> "哈哈哈"</span>
-    <textarea style="width:99%;height: 50px;border-radius: 5px"></textarea>
 </div>
 
 <input type="text" style="display: none" id="error_api_body">
 <script>
+    function error_show_response(span_text,ret) {
+        var error_div = document.getElementById('error_div'); //声明这个请求体展示窗口
+        var s = document.createElement('span'); //创造替换标签
+        s.innerText = span_text;
+        var t =document.createElement('textarea'); //传教替换内容多行文本
+        t.style='width:99%;height:50px;border-radius:5px;color:black;margin-bottom:10px';
+        t.value=ret;
+        error_div.appendChild(s);
+        error_div.appendChild(t);
+    }
     function error_play() {
         api_body=document.getElementById('error_api_body').value;
         ready_error_data=document.getElementById('ready_error_data').value;
@@ -589,11 +594,14 @@ left:10%;background-color: #3c4043;box-shadow: 4px 4px 8px grey;color: white;pad
                         $.extend(true,new_body,s);
                         new_body[i][1]=eval(r[j]);
                         console.log(new_body);
+                        var span_text='替换:' + new_body[i][0]+'-->'+r[j];
                         $.get('/error_request/',{
                             'api_id':api_id,
-                            'new_body':JSON.stringify(new_body)
+                            'new_body':JSON.stringify(new_body),
+                            'span_text':span_text
                         },function (ret) {
-
+                            res=eval(ret);
+                            error_show_response(res.span_text,res.response);
                         });
                     }
                 }
@@ -612,11 +620,14 @@ left:10%;background-color: #3c4043;box-shadow: 4px 4px 8px grey;color: white;pad
                         $.extend(true,new_body,s);
                         new_body[i]=eval(r[j]);
                         console.log(new_body);
+                        var span_text = '替换:'+i+'-->'+r[j];
                         $.get('/error_request/',{
                             'api_id':api_id,
-                            'new_body':JSON.stringify(new_body)
+                            'new_body':JSON.stringify(new_body),
+                            'span_text':span_text
                         },function (ret) {
-
+                            res=eval(ret);
+                            error_show_response(res.span_text,res.response);
                         });
                     }
                 }
@@ -626,7 +637,8 @@ left:10%;background-color: #3c4043;box-shadow: 4px 4px 8px grey;color: white;pad
             }
         }
     }
-    function error_test(api_id,api_body) {
+    function error_test(api_id) {
+        var api_body=document.getElementById('api_error_'+api_id).value;
         //显示蒙层，并设置好蒙层的层级关系，让其在调试层之下，其他元素之上
         document.getElementById('mengceng').style.display='block';
         document.getElementById('mengceng').style.zIndex='998';

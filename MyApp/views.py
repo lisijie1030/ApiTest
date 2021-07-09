@@ -292,17 +292,18 @@ def copy_api(request):
 #异常值发送请求
 def error_request(request):
     api_id=request.GET['api_id']
-    print(api_id)
     new_body=request.GET['new_body']
-    #验证下请求是不是新的替换过
-    print(new_body)
+    span_text=request.GET['span_text']
     api=DB_apis.objects.filter(id=api_id)[0]
     method=api.api_method
     url=api.api_url
     host=api.api_host
     header=api.api_header
     body_method=api.body_method
-    header=json.loads(header)
+    try:
+        header=json.loads(header)
+    except:
+        return HttpResponse('请求头不符合json格式！')
     if host[-1] == '/' and url[0] =='/':
         url = host[:-1] + url
     elif host[-1] !='/' and url[0] !='/':
@@ -329,8 +330,10 @@ def error_request(request):
             return HttpResponse('非法的请求体类型')
         #把返回值传递给前端页面
         response.encoding='utf-8'
-        return HttpResponse(response.text)
+        res_json={"response":response.text,"span_text":span_text}
+        return HttpResponse(json.dumps(res_json),content_type='application/json')
     except:
-        return HttpResponse('sorry,interface is not pass')
+        res_json={"response":'sorry,interface is not pass',"span_text":span_text}
+        return HttpResponse(json.dumps(res_json),content_type='application/json')
 
 
