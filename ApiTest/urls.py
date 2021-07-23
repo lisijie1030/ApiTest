@@ -21,7 +21,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('welcome/', views.welcome),  # 获取菜单
     path('home/',views.home),  # 进入首页
-    re_path(r"^child/(?P<eid>.+)/(?P<oid>.*)/$", views.child),  # 返回子页面
+    re_path(r"^child/(?P<eid>.+)/(?P<oid>.*)/(?P<ooid>.*)/$", views.child),  # 返回子页面
     path('login/',views.login),  # 进入登陆页面
     path('login_action/',views.login_action),  # 登陆
     path('register_action/',views.register_action), # 注册
@@ -45,4 +45,15 @@ urlpatterns = [
     path('Api_send/',views.Api_send),  # 调试层发送请求
     path('copy_api/',views.copy_api),  # 复制接口
     path('error_request/',views.error_request),  # 调用异常测试接口
+    path('Api_send_home/',views.Api_send_home),  # 首页发送请求
+    path('get_home_log/',views.get_home_log),  # 获取最新请求记录
+    path('get_api_log_home/',views.get_api_log_home),  # 获取完整的单一的请求记录数据
+    re_path(r"^home_log/(?P<log_id>.*)/$",views.home),  # 再次进入首页，这次要带着请求记录
+    re_path(r"^add_case/(?P<eid>.*)/$",views.add_case),  # 增加用例
+    re_path(r"^del_case/(?P<eid>.*)/(?P<oid>.*)/$",views.del_case),  # 删除用例
+    re_path(r"^copy_case/(?P<eid>.*)/(?P<oid>.*)/$",views.copy_case),  # 复制用例
+    path('get_small/',views.get_small),  # 获取小用例步骤的列表数据
+    path('add_new_step/',views.add_new_step),  # 新增小步骤接口
+    re_path(r"^delete_step/(?P<eid>.*)/$",views.delete_step),  # 删除小步骤接口
+    path('get_step/',views.get_step),  # 获取小步骤
 ]

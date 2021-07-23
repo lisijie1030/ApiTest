@@ -12,16 +12,22 @@ def welcome(request):
     return render(request,'welcome.html')
 
 #返回子页面
-def child(request,eid,oid):
-    res=child_json(eid,oid)
+def child(request,eid,oid,ooid):
+    res=child_json(eid,oid,ooid)
     return render(request,eid,res)
 
 #控制不同的页面返回不同的数据：数据分发器
-def child_json(eid,oid=''):
+def child_json(eid,oid='',ooid=''):
     res={}
     if eid =='home.html':
         data=DB_home_href.objects.all()
-        res = {"hrefs": data}
+        home_log=DB_apis_log.objects.filter(user_id=oid)[::-1]
+        if ooid == '':
+            res = {"hrefs": data,"home_log":home_log}
+        else:
+            log = DB_apis_log.objects.filter(id=ooid)[0]
+            res = {"hrefs":data,"home_log":home_log,"log":log}
+
     if eid =='project_list.html':
         data=DB_project.objects.all()
         res={"projects":data}
@@ -32,8 +38,11 @@ def child_json(eid,oid=''):
         res={"project":project,'apis':apis}
 
     if eid =='P_cases.html':
-        project=DB_project.objects.filter(id=oid)[0]
-        res={"project":project}
+        #这里应该是去数据库拿到这个项目的所有大用例了
+        project = DB_project.objects.filter(id=oid)[0]
+        Cases = DB_cases.objects.filter(project_id=oid)
+        apis = DB_apis.objects.filter(project_id=oid)
+        res = {"project":project,"Cases":Cases,"apis":apis}
 
     if eid =='P_project_set.html':
         project=DB_project.objects.filter(id=oid)[0]
@@ -43,8 +52,8 @@ def child_json(eid,oid=''):
 
 #进入主页
 @login_required
-def home(request):
-    return render(request,'welcome.html',{"whichHTML": "home.html","oid": ""})
+def home(request,log_id=''):
+    return render(request,'welcome.html',{"whichHTML":"home.html","oid":request.user.id,"ooid":log_id})
 
 def login(request):
     return render(request,'login.html')
@@ -104,6 +113,10 @@ def delete_project(request):
     id=request.GET['id']
     DB_project.objects.filter(id=id).delete()
     DB_apis.objects.filter(project_id=id).delete()
+    all_Case=DB_cases.objects.filter(project_id=id)
+    for i in all_Case:
+        DB_step.objects.filter(Case_id=i.id).delete()
+        i.delete()
     return HttpResponse('')
 
 #新增项目
@@ -337,3 +350,129 @@ def error_request(request):
         return HttpResponse(json.dumps(res_json),content_type='application/json')
 
 
+# 首页发送请求
+def Api_send_home(request):
+    # 提取所有数据
+    ts_method = request.GET['ts_method']
+    ts_url = request.GET['ts_url']
+    ts_host = request.GET['ts_host']
+    ts_header = request.GET['ts_header']
+    ts_body_method = request.GET['ts_body_method']
+    ts_api_body = request.GET['ts_api_body']
+    # 发送请求获取返回值
+    try:
+        header = json.loads(ts_header) #处理header
+    except:
+        return HttpResponse('请求头不符合json格式！')
+    # 写入到数据库请求记录表中
+    DB_apis_log.objects.create(user_id=request.user.id,
+                               api_method=ts_method,
+                               api_url=ts_url,
+                               api_header=ts_header,
+                               api_host=ts_host,
+                               body_method=ts_body_method,
+                               api_body=ts_api_body,
+                               )
+    # 拼接完整url
+    if ts_host[-1] == '/' and ts_url[0] =='/': #都有/
+        url = ts_host[:-1] + ts_url
+    elif ts_host[-1] != '/' and ts_url[0] !='/': #都没有/
+        url = ts_host+ '/' + ts_url
+    else: #肯定有一个有/
+        url = ts_host + ts_url
+    try:
+        if ts_body_method == 'none':
+            response = requests.request(ts_method.upper(), url, headers=header, data={} )
+        elif ts_body_method == 'form-data':
+            files = []
+            payload = {}
+            for i in eval(ts_api_body):
+                payload[i[0]] = i[1]
+            response = requests.request(ts_method.upper(), url, headers=header, data=payload, files=files )
+        elif ts_body_method == 'x-www-form-urlencoded':
+            header['Content-Type'] = 'application/x-www-form-urlencoded'
+            payload = {}
+            for i in eval(ts_api_body):
+                payload[i[0]] = i[1]
+            response = requests.request(ts_method.upper(), url, headers=header, data=payload )
+        else: #这时肯定是raw的五个子选项：
+            if ts_body_method == 'Text':
+                header['Content-Type'] = 'text/plain'
+            if ts_body_method == 'JavaScript':
+                header['Content-Type'] = 'text/plain'
+            if ts_body_method == 'Json':
+                header['Content-Type'] = 'text/plain'
+            if ts_body_method == 'Html':
+                header['Content-Type'] = 'text/plain'
+            if ts_body_method == 'Xml':
+                header['Content-Type'] = 'text/plain'
+            response = requests.request(ts_method.upper(), url, headers=header, data=ts_api_body.encode('utf-8'))
+        # 把返回值传递给前端页面
+        response.encoding = "utf-8"
+        return HttpResponse(response.text)
+    except Exception as e:
+        return HttpResponse(str(e))
+
+#首页获取请求记录
+def get_home_log(request):
+    user_id=request.user.id
+    all_logs=DB_apis_log.objects.filter(user_id=user_id)
+    ret={"all_logs":list(all_logs.values("id","api_method","api_host","api_url"))[::-1]}
+    return HttpResponse(json.dumps(ret),content_type='application/json')
+
+#获取完整的单一的请求记录数据
+def get_api_log_home(request):
+    log_id=request.GET['log_id']
+    log=DB_apis_log.objects.filter(id=log_id)
+    ret={"log":list(log.values())[0]}
+    print(ret)
+    return HttpResponse(json.dumps(ret),connect_type='application/json')
+
+#增加用例
+def add_case(request,eid):
+    DB_cases.objects.create(project_id=eid,name='')
+    return HttpResponseRedirect('/cases/%s/'%eid)
+
+#删除用例
+def del_case(request,eid,oid):
+    DB_cases.objects.filter(id=oid).delete()
+    DB_step.objects.filter(Case_id=oid).delete()
+    return HttpResponseRedirect('/cases/%s/'%eid)
+
+#删除用例
+def copy_case(request,eid,oid):
+    old_case = DB_cases.objects.filter(id=oid)[0]
+    DB_cases.objects.create(project_id=old_case.project_id,name=old_case.name+'_副本')
+    return HttpResponseRedirect('/cases/%s/'%eid)
+
+#获取小用例步骤的数据
+def get_small(request):
+    case_id = request.GET['case_id']
+    steps = DB_step.objects.filter(Case_id=case_id).order_by('index')
+    ret = {"all_steps":list(steps.values("id","name","index"))}
+    return HttpResponse(json.dumps(ret),content_type='application/json')
+
+#新增小步骤
+def add_new_step(request):
+    Case_id = request.GET['Case_id']
+    all_len = len(DB_step.objects.filter(Case_id=Case_id))
+    DB_step.objects.create(Case_id=Case_id,name='我是新步骤',index=all_len+1)
+    return HttpResponse('')
+
+#删除小步骤
+def delete_step(request,eid):
+    step = DB_step.objects.filter(id=eid)[0]
+    index = step.index
+    Case_id = step.Case_id
+    step.delete()
+    for i in DB_step.objects.filter(Case_id=Case_id).filter(index__gt=index): #双筛选和大于写法字段__gt=
+        i.index -= 1
+        i.save()
+    return HttpResponse('')
+
+#获取小步骤
+def get_step(request):
+    step_id = request.GET['step_id']
+    step = DB_step.objects.filter(id=step_id)
+    steplist = list(step.values())[0]
+    return HttpResponse(json.dumps(steplist),content_type='application/json')

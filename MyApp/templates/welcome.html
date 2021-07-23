@@ -96,12 +96,13 @@ padding-left:5px;padding-right:5px">
 <div id="page1"></div>
 
 <script>
-$('#page1').load('/child/'+'{{ whichHTML }}/{{ oid }}/')
+$('#page1').load('/child/'+'{{ whichHTML }}/{{ oid }}/{{ ooid }}/')
 </script>
 
 <script>
-    if("{{whichHTML}}"!='home.html'){
-        document.getElementById('menu_btn').click();
+    if("{{ whichHTML }}"!='home.html'){
+        document.getElementById('navbar').style.display='none';
+        document.getElementById('menu_btn').style.display='none';
     }
 </script>
 
