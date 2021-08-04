@@ -56,4 +56,8 @@ urlpatterns = [
     path('add_new_step/',views.add_new_step),  # 新增小步骤接口
     re_path(r"^delete_step/(?P<eid>.*)/$",views.delete_step),  # 删除小步骤接口
     path('get_step/',views.get_step),  # 获取小步骤
+    path('save_step/',views.save_step),  # 保存小步骤
+    path('step_get_api/',views.step_get_api),  # 步骤详情页获取接口数据
+    path('Run_Case/',views.Run_Case),  # 运行大用例
+    re_path(r'^look_report/(?P<eid>.*)/$',views.look_report),  # 查看报告
 ]
